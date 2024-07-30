@@ -1,0 +1,76 @@
+services:
+  db:
+    image: postgres
+    container_name: postgres_homework
+    environment:
+      POSTGRES_DB: postgres_compose
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+    ports:
+      - "5431:5432"
+    volumes:
+      - homework_volume:/var/lib/postgresql/data
+    networks:
+      - homework_network
+
+  spring:
+    build: .
+    image: spring-app-homework:latest
+    container_name: spring-homework-compose
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_compose:5432/ggdb
+      SPRING_DATASOURCE_USERNAME: test
+      SPRING_DATASOURCE_PASSWORD: test
+    depends_on:
+      - database
+    networks:
+      - homework_network
+    ports:
+      - "8089:8080"
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: "rabbitmq"
+    ports:
+      - 5672:5672
+      - 15672:15672
+  database:
+    image: postgres
+    container_name: postgres_key_cloack
+    environment:
+      POSTGRES_DB: keycloack_db
+      POSTGRES_USER: bros
+      POSTGRES_PASSWORD: bros
+    ports:
+      - ":5432"
+    volumes:
+      - homework_keycloack_volume:/var/lib/postgresql/data
+    networks:
+      - homework_network
+
+  keycloack:
+    image: quay.io/keycloak/keycloak:23.0.6
+    container_name: keycloack
+    ports:
+      - "8080:8080"
+      - "8443:8443"
+    volumes:
+      - homework_keycloack_volume:/var/lib/postgresql/data
+    networks:
+      - homework_network
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - DB_VENDOR=postgres
+      - DB_ADDR=database
+      - DB_DATABASE=keycloack_db
+      - DB_USER= bros
+      - DB_PASSWORD= bros
+    command: ["start-dev"]
+    restart: unless-stopped
+
+volumes:
+  homework_volume:
+  homework_keycloack_volume:
+networks:
+  homework_network:
